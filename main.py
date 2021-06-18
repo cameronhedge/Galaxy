@@ -1,4 +1,3 @@
-# 4:35:08
 from kivy.config import Config
 
 Config.set('graphics', 'width', 900)
