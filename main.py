@@ -1,4 +1,6 @@
 from kivy.config import Config
+from kivy.lang import Builder
+from kivy.uix.relativelayout import RelativeLayout
 
 Config.set('graphics', 'width', 900)
 Config.set('graphics', 'height', 400)
@@ -8,12 +10,15 @@ from kivy import platform
 from kivy.core.window import Window
 from kivy.app import App
 from kivy.graphics import Color, Line, Quad, Triangle
-from kivy.properties import NumericProperty, Clock
+from kivy.properties import NumericProperty, Clock, ObjectProperty, StringProperty
 from kivy.uix.widget import Widget
 
-class MainWidget(Widget):
+Builder.load_file("menu.kv")
+
+class MainWidget(RelativeLayout):
     from transforms import transform, transform_2D, transform_perspective
     from user_actions import on_keyboard_up, on_keyboard_down, on_touch_down, on_touch_up, keyboard_closed
+    menu_widget = ObjectProperty()
     perspective_point_x = NumericProperty(0)
     perspective_point_y = NumericProperty(0)
 
@@ -44,6 +49,10 @@ class MainWidget(Widget):
     ship_coordinates = [(0, 0), (0, 0), (0, 0)]
 
     state_game_over = False
+    state_game_has_started = False
+
+    menu_title = StringProperty("G   A   L   A   X   Y")
+    menu_button_title = StringProperty("START")
 
     def __init__(self, **kwargs):
         super(MainWidget, self).__init__(**kwargs)
@@ -58,6 +67,16 @@ class MainWidget(Widget):
             self._keyboard.bind(on_key_down=self.on_keyboard_down)
             self._keyboard.bind(on_key_up=self.on_keyboard_up)
         Clock.schedule_interval(self.update, 1/60)
+
+    def reset_game(self):
+        self.current_offset_y = 0
+        self.current_y_loop = 0
+        self.current_speed_x = 0
+        self.current_offset_x = 0
+        self.tiles_coordinates = []
+        self.pre_fill_tiles_coordinates()
+        self.generate_tiles_coordinates()
+        self.state_game_over = False
 
     def init_ship(self):
         with self.canvas:
@@ -236,7 +255,7 @@ class MainWidget(Widget):
         self.update_tiles()
         self.update_ship()
 
-        if not self.state_game_over:
+        if not self.state_game_over and self.state_game_has_started:
             speed_y = self.SPEED * self.height / 100
             self.current_offset_y += speed_y * time_factor
             spacing_y = self.H_LINES_SPACING * self.height
@@ -249,8 +268,16 @@ class MainWidget(Widget):
             self.current_offset_x += self.current_speed_x * time_factor
 
         if not self.check_ship_collision() and not self.state_game_over:
-            print("Game Over")
             self.state_game_over = True
+            self.menu_title = "G  A  M  E     O  V  E  R"
+            self.menu_button_title = "RESTART"
+            self.menu_widget.opacity = 1
+
+    def on_menu_button_pressed(self):
+        self.reset_game()
+        self.state_game_has_started = True
+        self.menu_widget.opacity = 0
+
 
 class GalaxyApp(App):
     pass
